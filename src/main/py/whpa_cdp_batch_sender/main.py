@@ -20,7 +20,7 @@ batch_receiver_url = os.getenv('WHPA_CDP_CLIENT_GATEWAY_BATCH_RECEIVER_URL', def
 timezone = os.getenv('WHPA_CDP_CLIENT_GATEWAY_TIMEZONE', default='GMT')
 
 # Tenant
-tenant = os.getenv('WHPA_CDP_CLIENT_GATEWAY_BATCH_RECEIVER_UR', default='GMT')
+tenant = os.getenv('WHPA_CDP_CLIENT_GATEWAY_BATCH_RECEIVER_UR', default='America/New_York')
 
 headers = {'timezone': timezone, 'tenant': tenant}
 nc = None
