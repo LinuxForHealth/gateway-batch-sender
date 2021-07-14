@@ -4,22 +4,26 @@ import os
 import time
 from nats.aio.client import Client as NATS
 from nats.aio.errors import ErrTimeout, ErrNoServers
-from caf_logger import logger as caflogger
+import logging
 from functools import partial
-
-nc = None
-logger = caflogger.get_logger('whpa_cdp_batch_sender.config')
 
 ## HL7 is the stream and ENCRYPTED_BATCHES is the consumer.
 subject = os.getenv('WHPA_CDP_CLIENT_GATEWAY_ENCRYPTED_BATCHES', default='HL7.ENCRYPTED_BATCHES')
+
+# NATS Jetstream connection info
 connected_address = os.getenv('WHPA_CDP_CLIENT_GATEWAY_NATS_SERVER_URL', default='127.0.0.1:4222')
+
+# Batch receiver cloud
 batch_receiver_url = os.getenv('WHPA_CDP_CLIENT_GATEWAY_BATCH_RECEIVER_URL', default='127.0.0.1:4222')
 
-# How do I get these two?
-timezone = os.getenv('WHPA_CDP_CLIENT_GATEWAY_BATCH_RECEIVER_URL', default='GMT')
-tenant = 'cloud1'
+# Timezone
+timezone = os.getenv('WHPA_CDP_CLIENT_GATEWAY_TIMEZONE', default='GMT')
+
+# Tenant
+tenant = os.getenv('WHPA_CDP_CLIENT_GATEWAY_BATCH_RECEIVER_UR', default='GMT')
 
 headers = {'timezone': timezone, 'tenant': tenant}
+nc = None
 
 # Connect to the NATS jetstream server
 async def nc_connect():
@@ -29,30 +33,28 @@ async def nc_connect():
     try:
         await nc.connect(connected_address, loop=loop)
     except ErrNoServers as e:
-        print(e)
+        logging.error(e)
 
 # Send message to the batch receiver in the cloud
 async def send_to_cloud(msg):
-    print('Send to the cloud batch receiver')
-    logger.info('test')
+    logging.info('Send to the cloud batch receiver')
     async with aiohttp.ClientSession() as session:
         async with session.put('batch_receiver_url', data=msg, headers=headers) as resp:
-            print(resp.status)
+            logging.info(resp.status)
             response = await resp.text()
-            print(response)
+            logging.info(response)
 
 # Callback for the message ack        
 def ack_callback(msg, future):
-    print('4. confirm that ack has been received by the jetstream server')
-    print(f'Received ACK: {msg.data}')
-    print('5. processing message finished')
+    logging.info('Confirmed that ack has been received by the jetstream server')
+    logging.info('Received ACK: {msg.data}')
     future.set_result(None)
 
 #Callback for the message request
 def message_handler(msg, future):
-    print(f'Received response: {msg.data}')
-    print('3. do something with the message')
-    loop.create_task(send_to_cloud('test'))
+    logging.info('Received response: {msg.data}')
+    logging.info('Calling the batch receiver')
+    loop.create_task(send_to_cloud(msg))
     if len(msg.reply) != 0:
         # 3. send ack to jetstream after message has been processed
         loop.create_task(nc.request(msg.reply, b'+ACK', cb=partial(ack_callback, future=future)))
@@ -61,22 +63,24 @@ async def run(loop):
     global nc
 
     if nc is None:
-        print("error nc not initialized")
+        logging.error("Error NC is not initialized")
         return
 
     while True:                   
             fut = loop.create_future()
-            print('1. Requesting next message from jetstream')
+            logging.info(' Requesting next message from jetstream')
             try:
                 response = await nc.request('$JS.API.CONSUMER.MSG.NEXT.'+subject, payload=b'', cb=partial(message_handler, future=fut))
-                print('Request response='+str(response))
+                logging.info('Request call response='+str(response))
             except ErrTimeout:
-                print("Request timed out")
+                logging.error("Request timed out")
                     
             # sleep 1 sescond before requesting next message        
             # await asyncio.sleep(1, loop=loop)
-            (print('2. waiting for processing to be complete'))
+            logging.info('Waiting for processing to be complete')
             await fut
+            logging.info('Processing completed')
+            print('Processing complete!')
 
         
 if __name__ == '__main__':
