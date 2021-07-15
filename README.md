@@ -1,7 +1,7 @@
 # whpa-cdp-batch-sender
 
 This service will...
-- Read batches from NATS Jetstream Server Consumer "HL7.Zipped.Batches" and send the appropriate ACK to the Jetstream Server
+- Read batches from NATS Jetstream Server Consumer "ENCRYPTED_BATCHES and send the appropriate ACK to the Jetstream Server
 - Send HL7 batches to the HL7 Batch Receiver in the Cloud via Rest API call including tenantId and timezone of where the gateway is deployed (in configuration) in the header.
 
 ## Deployment
@@ -76,9 +76,25 @@ python3 -m whpa_cdp_batch_sender.main
 To send a message:
 
 ```bash
-nats req HL7.ENCRYPTED_BATCHES my_message
+nats req HL7.ENCRYPTED_BATCHES <subject> [<body>]
 ```
 
-TBD: 
+To send a message from a file:
 
-Discuss env variables.
+```bash
+echo <filename> | nats req HL7.ENCRYPTED_BATCHES <subject>
+```
+
+### Environment variables
+
+Enviroments variables that need to be set if you want anything other than the default value:
+
+WHPA_CDP_CLIENT_GATEWAY_ENCRYPTED_BATCHES = NATS subject to use
+
+WHPA_CDP_CLIENT_GATEWAY_NATS_SERVER_URL = NATS Jetstream connection info
+
+WHPA_CDP_CLIENT_GATEWAY_BATCH_RECEIVER_URL = Batch receiver cloud URL
+
+WHPA_CDP_CLIENT_GATEWAY_TIMEZONE = Timezone
+
+WHPA_CDP_CLIENT_GATEWAY_TENANT = Tenant
