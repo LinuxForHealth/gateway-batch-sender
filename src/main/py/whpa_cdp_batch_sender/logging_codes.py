@@ -1,0 +1,38 @@
+""" Common place to document project logging codes."""
+
+# ERROR
+NATS_CONNECT_ERROR = 'CGBSSERR001: Error connecting to the NATS server: "{}".'
+NATS_NOT_INITIALIZED = 'CGBSSERR001: NATS not initialized.'
+TEST = 'CGBSSERR001 '
+TEST = 'CGBSSERR001 '
+TEST = 'CGBSSERR001 '
+TEST = 'CGBSSERR001 '
+TEST = 'CGBSSERR001 '
+TEST = 'CGBSSERR001 '
+TEST = 'CGBSSERR001 '
+TEST = 'CGBSSERR001 '
+TEST = 'CGBSSERR001 '
+
+
+#INFO
+STARTUP_ENV_VARS = 'CGBSSLOG001: Batch sender started with the follow value from the env:\nHL7 subject="{}"\nNATs Jetstream Connected Address="{}"\nBatch Receiver URL="{}"\nTimezone="{}"\nTenant="+"{}"'
+SENDING_TO_CLOUD = 'CGBSSLOG002: Sending this message to the cloud batch receiver: "{}"'
+TEST = 'CGBSSLOG001: Batch Reciever response status'
+TEST = 'CGBSSLOG001: '
+TEST = 'CGBSSLOG001: '
+TEST = 'CGBSSLOG001: '
+TEST = 'CGBSSLOG001: '
+TEST = 'CGBSSLOG001: '
+TEST = 'CGBSSLOG001: '
+TEST = 'CGBSSLOG001: '
+TEST = 'CGBSSLOG001: '
+TEST = 'CGBSSLOG001: '
+TEST = 'CGBSSLOG001: '
+TEST = 'CGBSSLOG001: '
+TEST = 'CGBSSLOG001: '
+TEST = 'CGBSSLOG001: '
+TEST = 'CGBSSLOG001: '
+TEST = 'CGBSSLOG001: '
+TEST = 'CGBSSLOG001: '
+TEST = 'CGBSSLOG001: '
+TEST = 'CGBSSLOG001: '

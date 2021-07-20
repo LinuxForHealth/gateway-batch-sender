@@ -2,15 +2,13 @@ import asyncio
 import aiohttp
 import os
 import time
-import logging
+from whpa_cdp_batch_sender import logger_util, logging_codes
 from nats.aio.client import Client as NATS
 from nats.aio.errors import ErrTimeout, ErrNoServers
 from async_retrying import retry
-
 from functools import partial
 
-# uncomment to print instead of log (if you are running the program via commandline)
-# logging.info = print  
+logger = logger_util.get_logger(__name__)
 
 ## HL7 is the stream and ENCRYPTED_BATCHES is the consumer.
 subject = os.getenv('WHPA_CDP_CLIENT_GATEWAY_ENCRYPTED_BATCHES', default='HL7.ENCRYPTED_BATCHES')
@@ -23,14 +21,12 @@ timezone = os.getenv('WHPA_CDP_CLIENT_GATEWAY_TIMEZONE', default='America/New_Yo
 # Tenant
 tenant = os.getenv('WHPA_CDP_CLIENT_GATEWAY_TENANT', default='cloud1')
 
-logging.info("Batch sender started with the follow value from the env:")
-logging.info("HL7 subject="+subject);
-logging.info("NATs Jetstream Connected Address="+connected_address);
-logging.info("Batch Receiver URL="+batch_receiver_url);
-logging.info("Timezone="+timezone);
-logging.info("Tenant="+tenant);
+# logger.info(logging_codes.STARTUP_ENV_VARS,subject,connected_address,batch_receiver_url,timezone,tenant)
 
-headers = {'timezone': timezone, 'tenant-id': tenant, 'Content-Type': 'application/zip'}
+#headers used in the post to the batch receiver.
+headers = {'timezone': timezone, 'tenant-id': tenant}
+
+#uninitiated NATS Client
 nc = None
 
 # Connect to the NATS jetstream server
@@ -42,41 +38,42 @@ async def nc_connect():
     try:
         await nc.connect(connected_address, loop=loop)
     except ErrNoServers as e:
-        logging.error(e)
+        logger.error(logging_codes.NATS_CONNECT_ERROR,e)
         return 1
 
 # Send message to the batch receiver in the cloud
 @retry(attempts=3)
 async def send_to_cloud(msg):
-    logging.info('Send to the cloud batch receiver')
-    logging.info('Sending Msg:'+str(msg.data))
+    # logger.info(logging_codes.SENDING_TO_CLOUD,'test')
     async with aiohttp.ClientSession() as session:
         try:
-            async with session.post(batch_receiver_url, data=msg.data, headers=headers) as resp:
+            form = aiohttp.FormData()
+            form.add_field('file', msg.data)
+            async with session.post(batch_receiver_url, data=form, headers=headers) as resp:
                     response_msg = await resp.text()
-                    logging.info('Response status:'+str(resp.status))
-                    logging.info('Response:'+response_msg)
+                    logger.info('Response status:'+str(resp.status))
+                    logger.info('Response:'+response_msg)
                     if resp.status == 200 and resp.status < 300:        
-                        logging.info('Batch sent successfully')
+                        logger.info('Batch sent successfully')
                     else:
-                        logging.info('Erroring sending batch to the cloud')
+                        logger.info('Erroring sending batch to the cloud')
                         raise RuntimeError('Non-200 error code response')
                     
         except aiohttp.ClientConnectorError as e:
-            logging.error('Connection Error'+ str(e))
+            logger.error('Connection Error',exc_info=e)
             raise
 
 # Callback for the message ack        
 def ack_callback(msg, future):
-    logging.info('Confirmed that ack has been received by the jetstream server')
-    logging.info(msg)
-    logging.info('Received ACK:'+str(msg.data))
+    logger.info('Confirmed that ack has been received by the jetstream server')
+    logger.info(msg)
+    logger.info('Received ACK:'+str(msg.data))
     future.set_result(None)
 
 #Callback for the message request
 def message_handler(msg, future):
-    logging.info('Received response from NATS:'+str(msg))
-    logging.info('Calling the batch receiver')
+    logger.info('Received response from NATS:'+str(msg))
+    logger.info('Calling the batch receiver')
     loop.create_task(send_to_cloud(msg))
     if len(msg.reply) != 0:
         # 3. send ack to jetstream after message has been processed
@@ -86,23 +83,23 @@ async def run(loop):
     global nc
 
     if nc is None:
-        logging.error("Error NC is not initialized")
+        logger.error(logging_codes.NATS_NOT_INITIALIZED)
         return 1
 
     while True:                   
             fut = loop.create_future()
-            logging.info('Requesting next message from jetstream')
+            logger.info('Requesting next message from jetstream')
             try:
                 response = await nc.request('$JS.API.CONSUMER.MSG.NEXT.'+subject, payload=b'', cb=partial(message_handler, future=fut))
-                logging.info('Request call response='+str(response))
+                logger.info('Request call response='+str(response))
             except ErrTimeout:
-                logging.error("Request timed out")
+                logger.error("Request timed out")
                     
             # sleep 1 sescond before requesting next message        
             # await asyncio.sleep(1, loop=loop)
-            logging.info('Waiting for processing to be complete')
+            logger.info('Waiting for processing to be complete')
             await fut
-            logging.info('Processing completed')
+            logger.info('Processing completed')
 
         
 if __name__ == '__main__':
