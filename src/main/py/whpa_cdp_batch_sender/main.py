@@ -9,7 +9,8 @@ from async_retrying import retry
 
 from functools import partial
 
-logging.info = print  # uncomment to print instead of log.
+# uncomment to print instead of log (if you are running the program via commandline)
+logging.info = print  
 
 ## HL7 is the stream and ENCRYPTED_BATCHES is the consumer.
 subject = os.getenv('WHPA_CDP_CLIENT_GATEWAY_ENCRYPTED_BATCHES', default='HL7.ENCRYPTED_BATCHES')
@@ -60,7 +61,10 @@ async def send_to_cloud(msg):
                     raise RuntimeError('Received error response code from server.')
                     
         except aiohttp.ClientConnectorError as e:
-          print('Connection Error', str(e))
+            logging.error('Connection Error'+ str(e))
+        except RuntimeError:
+            logging.error('Server returned a non-2xx return code')
+
 
 # Callback for the message ack        
 def ack_callback(msg, future):
@@ -100,7 +104,6 @@ async def run(loop):
             logging.info('Waiting for processing to be complete')
             await fut
             logging.info('Processing completed')
-            print('Processing complete!')
 
         
 if __name__ == '__main__':
