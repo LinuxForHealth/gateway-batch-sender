@@ -103,11 +103,15 @@ WHPA_CDP_CLIENT_GATEWAY_TENANT = Tenant
 
 Create the container using the docker build command below. Add your artifactory id (this is likely your w3 email) and key where specified.
 
+```bash
 docker build --build-arg USERNAME=<taasArtifactoryUsername> --build-arg PASSWORD=<taasArtifactoryPassword> -t whpa-cdp-batch-sender:1.0.0 .
+```
 
 If the steps completed successfully, the image specified by the -t option should now exist.
 
 ### Running the docker image
 Note that the versions may need updated in the examples below.
 
+```bash
 docker run --name whpa-cdp-batch-sender -p 5000:5000 whpa-cdp-batch-sender:1.0.0
+```
