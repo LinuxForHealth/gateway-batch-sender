@@ -30,7 +30,7 @@ logging.info("Batch Receiver URL="+batch_receiver_url);
 logging.info("Timezone="+timezone);
 logging.info("Tenant="+tenant);
 
-headers = {'timezone': timezone, 'tenant': tenant}
+headers = {'timezone': timezone, 'tenant-id': tenant}
 nc = None
 
 # Connect to the NATS jetstream server
@@ -51,7 +51,7 @@ async def send_to_cloud(msg):
     logging.info('Send to the cloud batch receiver')
     async with aiohttp.ClientSession() as session:
         try:
-            async with session.put('batch_receiver_url', data=msg, headers=headers) as resp:
+            async with session.post('batch_receiver_url', data=msg, headers=headers) as resp:
                 if resp.status >= 200 & resp.status < 300:        
                     logging.info('Batch sent successfully')
                 else:
