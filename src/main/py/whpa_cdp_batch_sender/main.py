@@ -10,7 +10,7 @@ from async_retrying import retry
 from functools import partial
 
 # uncomment to print instead of log (if you are running the program via commandline)
-logging.info = print  
+# logging.info = print  
 
 ## HL7 is the stream and ENCRYPTED_BATCHES is the consumer.
 subject = os.getenv('WHPA_CDP_CLIENT_GATEWAY_ENCRYPTED_BATCHES', default='HL7.ENCRYPTED_BATCHES')

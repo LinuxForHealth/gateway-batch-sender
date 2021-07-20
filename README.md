@@ -87,7 +87,7 @@ echo <filename> | nats req HL7.ENCRYPTED_BATCHES <subject>
 
 ### Environment variables
 
-Enviroments variables that need to be set if you want anything other than the default value:
+You will need to override these if you are not running locally.
 
 WHPA_CDP_CLIENT_GATEWAY_ENCRYPTED_BATCHES = NATS subject to use
 
@@ -99,7 +99,7 @@ WHPA_CDP_CLIENT_GATEWAY_TIMEZONE = Timezone
 
 WHPA_CDP_CLIENT_GATEWAY_TENANT = Tenant
 
-### Creatiing the docker image
+### Creating the docker image
 
 Create the container using the docker build command below. Add your artifactory id (this is likely your w3 email) and key where specified.
 
