@@ -65,7 +65,7 @@ To run unittest, execute:
 gradle clean test -b local.build.gradle
 ```
 
-### Running
+### Running by command line
 
 To run the program, execute:
 
@@ -98,3 +98,16 @@ WHPA_CDP_CLIENT_GATEWAY_BATCH_RECEIVER_URL = Batch receiver cloud URL
 WHPA_CDP_CLIENT_GATEWAY_TIMEZONE = Timezone
 
 WHPA_CDP_CLIENT_GATEWAY_TENANT = Tenant
+
+### Creatiing the docker image
+
+Create the container using the docker build command below. Add your artifactory id (this is likely your w3 email) and key where specified.
+
+docker build --build-arg USERNAME=jmaner@us.ibm.com --build-arg PASSWORD=AKCp8ihLAaUiinNBd4hf8uqMjpKX3BMNcfnn7DR2sJZEHjmw4uiX9fug2PguxsoGtkPJEkPN8 -t whpa-cdp-batch-sender:1.0.0 .
+
+If the steps completed successfully, the image specified by the -t option should now exist.
+
+### Running the docker image
+Note that the versions may need updated in the examples below.
+
+docker run --name whpa-cdp-batch-sender -p 5000:5000 whpa-cdp-batch-sender:1.0.0

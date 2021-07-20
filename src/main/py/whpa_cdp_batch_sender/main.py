@@ -2,9 +2,11 @@ import asyncio
 import aiohttp
 import os
 import time
+import logging
 from nats.aio.client import Client as NATS
 from nats.aio.errors import ErrTimeout, ErrNoServers
-import logging
+from async_retrying import retry
+
 from functools import partial
 
 logging.info = print  # uncomment to print instead of log.
@@ -14,11 +16,11 @@ subject = os.getenv('WHPA_CDP_CLIENT_GATEWAY_ENCRYPTED_BATCHES', default='HL7.EN
 # NATS Jetstream connection info
 connected_address = os.getenv('WHPA_CDP_CLIENT_GATEWAY_NATS_SERVER_URL', default='127.0.0.1:4222')
 # Batch receiver cloud
-batch_receiver_url = os.getenv('WHPA_CDP_CLIENT_GATEWAY_BATCH_RECEIVER_URL', default='127.0.0.1:4222')
+batch_receiver_url = os.getenv('WHPA_CDP_CLIENT_GATEWAY_BATCH_RECEIVER_URL', default='127.0.0.1:9080')
 # Timezone
-timezone = os.getenv('WHPA_CDP_CLIENT_GATEWAY_TIMEZONE', default='GMT')
+timezone = os.getenv('WHPA_CDP_CLIENT_GATEWAY_TIMEZONE', default='America/New_York')
 # Tenant
-tenant = os.getenv('WHPA_CDP_CLIENT_GATEWAY_TENANT', default='America/New_York')
+tenant = os.getenv('WHPA_CDP_CLIENT_GATEWAY_TENANT', default='cloud1')
 
 logging.info("Batch sender started with the follow value from the env:")
 logging.info("HL7 subject="+subject);
@@ -43,13 +45,22 @@ async def nc_connect():
         return 1
 
 # Send message to the batch receiver in the cloud
+@retry(attempts=10)
 async def send_to_cloud(msg):
     logging.info('Send to the cloud batch receiver')
     async with aiohttp.ClientSession() as session:
-        async with session.put('batch_receiver_url', data=msg, headers=headers) as resp:
-            logging.info(resp.status)
-            response = await resp.text()
-            logging.info(response)
+        try:
+            async with session.put('batch_receiver_url', data=msg, headers=headers) as resp:
+                if resp.status >= 200 & resp.status < 300:        
+                    logging.info('Batch sent successfully')
+                else:
+                    response = await resp.text()
+                    logging.info('Response status:'+resp.status)
+                    logging.info('Response:'+response)
+                    raise RuntimeError('Received error response code from server.')
+                    
+        except aiohttp.ClientConnectorError as e:
+          print('Connection Error', str(e))
 
 # Callback for the message ack        
 def ack_callback(msg, future):
