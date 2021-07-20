@@ -17,7 +17,7 @@ subject = os.getenv('WHPA_CDP_CLIENT_GATEWAY_ENCRYPTED_BATCHES', default='HL7.EN
 # NATS Jetstream connection info
 connected_address = os.getenv('WHPA_CDP_CLIENT_GATEWAY_NATS_SERVER_URL', default='127.0.0.1:4222')
 # Batch receiver cloud
-batch_receiver_url = os.getenv('WHPA_CDP_CLIENT_GATEWAY_BATCH_RECEIVER_URL', default='127.0.0.1:9080')
+batch_receiver_url = os.getenv('WHPA_CDP_CLIENT_GATEWAY_BATCH_RECEIVER_URL', default='http://192.168.37.21:5000/upload_hl7_batchzip')
 # Timezone
 timezone = os.getenv('WHPA_CDP_CLIENT_GATEWAY_TIMEZONE', default='America/New_York')
 # Tenant
@@ -30,7 +30,7 @@ logging.info("Batch Receiver URL="+batch_receiver_url);
 logging.info("Timezone="+timezone);
 logging.info("Tenant="+tenant);
 
-headers = {'timezone': timezone, 'tenant-id': tenant}
+headers = {'timezone': timezone, 'tenant-id': tenant, 'Content-Type': 'application/zip'}
 nc = None
 
 # Connect to the NATS jetstream server
@@ -46,25 +46,25 @@ async def nc_connect():
         return 1
 
 # Send message to the batch receiver in the cloud
-@retry(attempts=10)
+@retry(attempts=3)
 async def send_to_cloud(msg):
     logging.info('Send to the cloud batch receiver')
+    logging.info('Sending Msg:'+str(msg.data))
     async with aiohttp.ClientSession() as session:
         try:
-            async with session.post('batch_receiver_url', data=msg, headers=headers) as resp:
-                if resp.status >= 200 & resp.status < 300:        
-                    logging.info('Batch sent successfully')
-                else:
-                    response = await resp.text()
-                    logging.info('Response status:'+resp.status)
-                    logging.info('Response:'+response)
-                    raise RuntimeError('Received error response code from server.')
+            async with session.post(batch_receiver_url, data=msg.data, headers=headers) as resp:
+                    response_msg = await resp.text()
+                    logging.info('Response status:'+str(resp.status))
+                    logging.info('Response:'+response_msg)
+                    if resp.status == 200 and resp.status < 300:        
+                        logging.info('Batch sent successfully')
+                    else:
+                        logging.info('Erroring sending batch to the cloud')
+                        raise RuntimeError('Non-200 error code response')
                     
         except aiohttp.ClientConnectorError as e:
             logging.error('Connection Error'+ str(e))
-        except RuntimeError:
-            logging.error('Server returned a non-2xx return code')
-
+            raise
 
 # Callback for the message ack        
 def ack_callback(msg, future):
@@ -75,8 +75,7 @@ def ack_callback(msg, future):
 
 #Callback for the message request
 def message_handler(msg, future):
-    logging.info('Received response:'+str(msg))
-    logging.info('Received response: {msg.data}')
+    logging.info('Received response from NATS:'+str(msg))
     logging.info('Calling the batch receiver')
     loop.create_task(send_to_cloud(msg))
     if len(msg.reply) != 0:
