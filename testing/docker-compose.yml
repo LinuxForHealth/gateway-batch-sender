@@ -1,0 +1,53 @@
+version: "3.2"
+services:
+    nats-js:
+        image: nats:alpine
+        ports:
+            - "4222:4222"
+            - "6222:6222"
+            - "8222:8222"
+        command: --jetstream
+        networks: 
+            - sender-test
+    nats-tools:
+        image: synadia/nats-box:latest
+        volumes:
+            - ${PWD}/setup.sh:/tmp/setup.sh
+        command: ["/tmp/setup.sh"]
+        networks: 
+            - sender-test
+        depends_on: 
+            - nats-js
+    batch-sender:
+        build:
+            context: ../.
+            dockerfile: Dockerfile
+            args: 
+                USERNAME: ${USERNAME}
+                PASSWORD: ${PASSWORD}
+        environment:
+            WHPA_CDP_CLIENT_GATEWAY_NATS_SERVER_URL: nats-js:4222
+            WHPA_CDP_CLIENT_GATEWAY_BATCH_RECEIVER_URL: http://mock-receiver:5000/test
+            WHPA_CDP_CLIENT_GATEWAY_TIMEZONE: America/New_York
+            WHPA_CDP_CLIENT_GATEWAY_TENANT: tenant1
+        depends_on: 
+            - nats-tools
+            - mock-receiver
+        networks: 
+            - sender-test
+            
+    mock-receiver:
+        build:
+            context: .
+            dockerfile: test.Dockerfile
+        ports:
+            - 5000:5000
+        networks: 
+            - sender-test
+
+    
+networks: 
+    sender-test:
+        name: sender-test
+        
+    
