@@ -5,13 +5,6 @@ import sys
 _log_format = f"%(asctime)s - [%(levelname)s] - %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s"
 
 
-def get_file_handler(filename):
-    file_handler = logging.FileHandler(filename)
-    file_handler.setLevel(logging.WARNING)
-    file_handler.setFormatter(logging.Formatter(_log_format))
-    return file_handler
-
-
 def get_sysout_stream_handler(stream):
     stream_handler = logging.StreamHandler(stream)
     stream_handler.setLevel(logging.INFO)

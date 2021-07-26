@@ -13,15 +13,16 @@ logger = logger_util.get_logger(__name__)
 ## HL7 is the stream and ENCRYPTED_BATCHES is the consumer.
 subject = os.getenv('WHPA_CDP_CLIENT_GATEWAY_ENCRYPTED_BATCHES', default='HL7.ENCRYPTED_BATCHES')
 # NATS Jetstream connection info
-connected_address = os.getenv('WHPA_CDP_CLIENT_GATEWAY_NATS_SERVER_URL', default='127.0.0.1:4222')
+connected_address = os.getenv('WHPA_CDP_CLIENT_GATEWAY_NATS_SERVER_URL')
 # Batch receiver cloud
-batch_receiver_url = os.getenv('WHPA_CDP_CLIENT_GATEWAY_BATCH_RECEIVER_URL', default='http://192.1ss68.37.21:5000/upload_hl7_batchzip')
+batch_receiver_url = os.getenv('WHPA_CDP_CLIENT_GATEWAY_BATCH_RECEIVER_URL')
 # Timezone
-timezone = os.getenv('WHPA_CDP_CLIENT_GATEWAY_TIMEZONE', default='America/New_York')
+timezone = os.getenv('WHPA_CDP_CLIENT_GATEWAY_TIMEZONE')
 # Tenant
-tenant = os.getenv('WHPA_CDP_CLIENT_GATEWAY_TENANT', default='cloud1')
+tenant = os.getenv('WHPA_CDP_CLIENT_GATEWAY_TENANT')
 
 sleep_on_error_duration = int(os.getenv('WHPA_CDP_CLIENT_GATEWAY_SLEEP_ON_ERROR', default=5))
+
 
 #headers used in the post to the batch receiver.
 headers = {'timezone': timezone, 'tenant-id': tenant}
@@ -34,12 +35,12 @@ async def nc_connect():
     global nc
     
     nc = NATS()
-
     try:
-        await nc.connect(connected_address, loop=loop)
+        await nc.connect(connected_address)
+        return True
     except ErrNoServers as e:
         logger.error(logging_codes.NATS_CONNECT_ERROR,e)
-        return 1
+        return False
 
 # Send message to the batch receiver in the cloud
 @retry(attempts=5)
@@ -53,18 +54,15 @@ async def send_to_cloud(msg):
                 response_msg = await resp.text()
                 logger.info(logging_codes.BATCH_RECEIVER_RESP_STATUS, str(resp.status))
                 logger.info(logging_codes.BATCH_RECEIVER_RESP_MESSAGE, response_msg)
-                if resp.status == 200 and resp.status < 300:        
+                
+                if resp.status == 200:        
                     logger.info(logging_codes.BATCH_SENT_SUCCESS)
                 else:
                     logger.error(logging_codes.BATCH_FAILED_TO_SEND)
                     raise RuntimeError('Non-200 error code response')
                     
-        except aiohttp.ClientConnectorError as e:
-            logger.error(logging_codes.BATCH_SENDER_CONNECT_ERROR, exc_info=e)
-            await asyncio.sleep(sleep_on_error_duration)
-            raise
         except Exception as e:
-            logger.error(logging_codes.BATCH_SENDER_OTHER_ERROR, exc_info=e)
+            logger.error(logging_codes.BATCH_SENDER_ERROR, exc_info=e)
             await asyncio.sleep(sleep_on_error_duration)
             raise
 
@@ -78,6 +76,7 @@ async def message_handler(msg, future):
     logger.info(logging_codes.NATS_RECEIVED_NEXT_BATCH)
     try:
         await send_to_cloud(msg)
+
         if len(msg.reply) != 0:
             # 3. send ack to jetstream after message has been processed
             await nc.request(msg.reply, b'+ACK', cb=partial(ack_callback, future=future))
@@ -110,8 +109,27 @@ async def run(loop):
             await asyncio.sleep(sleep_on_error_duration)
 
         
+def main():
+    missing_config = False
+    if connected_address is None:
+        logger.error(logging_codes.MISSING_CONFIG, 'WHPA_CDP_CLIENT_GATEWAY_NATS_SERVER_URL')
+        missing_config = True
+    if batch_receiver_url is None:
+        logger.error(logging_codes.MISSING_CONFIG, 'WHPA_CDP_CLIENT_GATEWAY_BATCH_RECEIVER_URL')
+        missing_config = True
+    if timezone is None:
+        logger.error(logging_codes.MISSING_CONFIG, 'WHPA_CDP_CLIENT_GATEWAY_TIMEZONE')
+        missing_config = True
+    if tenant is None:
+        logger.error(logging_codes.MISSING_CONFIG, 'WHPA_CDP_CLIENT_GATEWAY_TENANT')
+        missing_config = True
+
+    if not missing_config:
+        loop = asyncio.get_event_loop()
+        connection_established = loop.run_until_complete(nc_connect())
+        if connection_established:
+            loop.run_until_complete(run(loop))
+        loop.close()
+
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(nc_connect())
-    loop.run_until_complete(run(loop))
-    loop.close()
+    main()
