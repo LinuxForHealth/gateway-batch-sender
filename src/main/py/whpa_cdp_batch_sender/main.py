@@ -11,17 +11,17 @@ from functools import partial
 logger = logger_util.get_logger(__name__)
 
 ## HL7 is the stream and ENCRYPTED_BATCHES is the consumer.
-subject = os.getenv('WHPA_CDP_CLIENT_GATEWAY_ENCRYPTED_BATCHES', default='HL7.ENCRYPTED_BATCHES')
+subject = os.getenv('ENCRYPTED_BATCHES_SUBJECT', default='HL7.ENCRYPTED_BATCHES')
 # NATS Jetstream connection info
-connected_address = os.getenv('WHPA_CDP_CLIENT_GATEWAY_NATS_SERVER_URL')
+connected_address = os.getenv('NATS_SERVER_URL')
 # Batch receiver cloud
-batch_receiver_url = os.getenv('WHPA_CDP_CLIENT_GATEWAY_BATCH_RECEIVER_URL')
+batch_receiver_url = os.getenv('BATCH_RECEIVER_URL')
 # Timezone
-timezone = os.getenv('WHPA_CDP_CLIENT_GATEWAY_TIMEZONE')
+timezone = os.getenv('GATEWAY_TIMEZONE')
 # Tenant
-tenant = os.getenv('WHPA_CDP_CLIENT_GATEWAY_TENANT')
+tenant = os.getenv('GATEWAY_TENANT')
 
-sleep_on_error_duration = int(os.getenv('WHPA_CDP_CLIENT_GATEWAY_SLEEP_ON_ERROR', default=5))
+sleep_on_error_duration = int(os.getenv('SLEEP_ON_ERROR_SECONDS', default=5))
 
 
 #headers used in the post to the batch receiver.

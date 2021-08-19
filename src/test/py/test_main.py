@@ -14,11 +14,11 @@ from async_retrying import retry, RetryError
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_env():
-    os.environ['WHPA_CDP_CLIENT_GATEWAY_NATS_SERVER_URL'] = 'nats-server'
-    os.environ['WHPA_CDP_CLIENT_GATEWAY_BATCH_RECEIVER_URL'] = 'batch-receiver'
-    os.environ['WHPA_CDP_CLIENT_GATEWAY_TIMEZONE'] = 'some-timezone'
-    os.environ['WHPA_CDP_CLIENT_GATEWAY_TENANT'] = 'tenant1'
-    os.environ['WHPA_CDP_CLIENT_GATEWAY_SLEEP_ON_ERROR'] = '0'
+    os.environ['NATS_SERVER_URL'] = 'nats-server'
+    os.environ['BATCH_RECEIVER_URL'] = 'batch-receiver'
+    os.environ['GATEWAY_TIMEZONE'] = 'some-timezone'
+    os.environ['GATEWAY_TENANT'] = 'tenant1'
+    os.environ['SLEEP_ON_ERROR_SECONDS'] = '0'
     
     importlib.reload(main)
 
@@ -106,11 +106,11 @@ async def test_message_handler(mocker):
 
 @pytest.mark.asyncio
 async def test_main(mocker):
-    os.environ['WHPA_CDP_CLIENT_GATEWAY_NATS_SERVER_URL'] = 'nats-server'
-    os.environ['WHPA_CDP_CLIENT_GATEWAY_BATCH_RECEIVER_URL'] = 'batch-receiver'
-    os.environ['WHPA_CDP_CLIENT_GATEWAY_TIMEZONE'] = 'some-timezone'
-    os.environ['WHPA_CDP_CLIENT_GATEWAY_TENANT'] = 'tenant1'
-    os.environ['WHPA_CDP_CLIENT_GATEWAY_SLEEP_ON_ERROR'] = '0'
+    os.environ['NATS_SERVER_URL'] = 'nats-server'
+    os.environ['BATCH_RECEIVER_URL'] = 'batch-receiver'
+    os.environ['GATEWAY_TIMEZONE'] = 'some-timezone'
+    os.environ['GATEWAY_TENANT'] = 'tenant1'
+    os.environ['SLEEP_ON_ERROR_SECONDS'] = '0'
     
     importlib.reload(main)
 
@@ -122,10 +122,10 @@ async def test_main(mocker):
     loop.reset_mock()
 
     # Case 2:
-    del os.environ['WHPA_CDP_CLIENT_GATEWAY_NATS_SERVER_URL']
-    del os.environ['WHPA_CDP_CLIENT_GATEWAY_BATCH_RECEIVER_URL']
-    del os.environ['WHPA_CDP_CLIENT_GATEWAY_TIMEZONE']
-    del os.environ['WHPA_CDP_CLIENT_GATEWAY_TENANT']
+    del os.environ['NATS_SERVER_URL']
+    del os.environ['BATCH_RECEIVER_URL']
+    del os.environ['GATEWAY_TIMEZONE']
+    del os.environ['GATEWAY_TENANT']
     
     importlib.reload(main)
     main.main()
