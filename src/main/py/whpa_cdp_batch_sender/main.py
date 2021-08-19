@@ -11,7 +11,7 @@ from functools import partial
 logger = logger_util.get_logger(__name__)
 
 ## HL7 is the stream and ENCRYPTED_BATCHES is the consumer.
-subject = os.getenv('ENCRYPTED_BATCHES_SUBJECT', default='HL7.ENCRYPTED_BATCHES')
+subject = os.getenv('NATS_INCOMING_SUBJECT', default='HL7.ENCRYPTED_BATCHES')
 # NATS Jetstream connection info
 connected_address = os.getenv('NATS_SERVER_URL')
 # Batch receiver cloud
@@ -112,16 +112,16 @@ async def run(loop):
 def main():
     missing_config = False
     if connected_address is None:
-        logger.error(logging_codes.MISSING_CONFIG, 'WHPA_CDP_CLIENT_GATEWAY_NATS_SERVER_URL')
+        logger.error(logging_codes.MISSING_CONFIG, 'NATS_SERVER_URL')
         missing_config = True
     if batch_receiver_url is None:
-        logger.error(logging_codes.MISSING_CONFIG, 'WHPA_CDP_CLIENT_GATEWAY_BATCH_RECEIVER_URL')
+        logger.error(logging_codes.MISSING_CONFIG, 'BATCH_RECEIVER_URL')
         missing_config = True
     if timezone is None:
-        logger.error(logging_codes.MISSING_CONFIG, 'WHPA_CDP_CLIENT_GATEWAY_TIMEZONE')
+        logger.error(logging_codes.MISSING_CONFIG, 'GATEWAY_TIMEZONE')
         missing_config = True
     if tenant is None:
-        logger.error(logging_codes.MISSING_CONFIG, 'WHPA_CDP_CLIENT_GATEWAY_TENANT')
+        logger.error(logging_codes.MISSING_CONFIG, 'GATEWAY_TENANT')
         missing_config = True
 
     if not missing_config:
