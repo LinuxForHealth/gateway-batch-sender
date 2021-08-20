@@ -1,16 +1,8 @@
-# whpa-cdp-batch-sender
+# gateway-batch-sender
 
 This service will...
 - Read batches from NATS Jetstream Server Consumer "ENCRYPTED_BATCHES and send the appropriate ACK to the Jetstream Server
 - Send HL7 batches to the HL7 Batch Receiver in the Cloud via Rest API call including tenantId and timezone of where the gateway is deployed (in configuration) in the header.
-
-## Deployment
-
-Since version 1.0.0, the build has been integrated with the Jenkins CI and images are now pushed automatically. See the Jenkinsfile for image path and version configurations.
-
-This image can be used to test the service/ run it locally without building etc.
-
----
 
 ## Development
 
@@ -20,10 +12,6 @@ This image can be used to test the service/ run it locally without building etc.
 gradle tasks # will list all the available tasks
 gradle build # will setup virtualenv, run all tests, and create reports and distribution
 ```
-
-Note: you will need the `taasArtifactoryUsername` and `taasArtifactoryPassword` variables in `gradle.properties`
-
-> [Refer](https://pages.github.ibm.com/WH-Provider-Analytics/CDP-Development/docs/Dev_setup/Python.html) and see `local.build.gradle` for more information.
 
 Update gradle.properties as needed.
 
@@ -70,7 +58,7 @@ gradle clean test -b local.build.gradle
 To run the program, execute:
 
 ```bash
-python3 -m whpa_cdp_batch_sender.main
+python3 -m batch_sender.main
 ```
 
 To send a message:
@@ -89,22 +77,22 @@ echo <filename> | nats req HL7.ENCRYPTED_BATCHES <subject>
 
 You will need to override these if you are not running locally.
 
-WHPA_CDP_CLIENT_GATEWAY_ENCRYPTED_BATCHES = NATS subject to use
+NATS_INCOMING_SUBJECT = NATS subject to use
 
-WHPA_CDP_CLIENT_GATEWAY_NATS_SERVER_URL = NATS Jetstream connection info
+NATS_SERVER_URL = NATS Jetstream connection info
 
-WHPA_CDP_CLIENT_GATEWAY_BATCH_RECEIVER_URL = Batch receiver cloud URL
+BATCH_RECEIVER_URL = Batch receiver cloud URL
 
-WHPA_CDP_CLIENT_GATEWAY_TIMEZONE = Timezone
+GATEWAY_TIMEZONE = Timezone
 
-WHPA_CDP_CLIENT_GATEWAY_TENANT = Tenant
+GATEWAY_TENANT = Tenant
 
 ### Creating the docker image
 
 Create the container using the docker build command below. Add your artifactory id (this is likely your w3 email) and key where specified.
 
 ```bash
-docker build --build-arg USERNAME=<taasArtifactoryUsername> --build-arg PASSWORD=<taasArtifactoryPassword> -t whpa-cdp-batch-sender:1.0.0 .
+docker build -t gateway-batch-sender:1.0.0 .
 ```
 
 If the steps completed successfully, the image specified by the -t option should now exist.
@@ -113,5 +101,5 @@ If the steps completed successfully, the image specified by the -t option should
 Note that the versions may need updated in the examples below.
 
 ```bash
-docker run --name whpa-cdp-batch-sender -p 5000:5000 whpa-cdp-batch-sender:1.0.0
+docker run --name gateway-batch-sender -p 5000:5000 gateway-batch-sender:1.0.0
 ```

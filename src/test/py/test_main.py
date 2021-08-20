@@ -66,7 +66,7 @@ async def test_message_handler(mocker):
     mocker.patch.object(main.nc, 'request', new=AsyncMock())
 
     # Case 1
-    main.len = lambda: 5
+    main.len = lambda _: 5
     message = Mock()
 
     future = asyncio.get_event_loop().create_future()
@@ -81,14 +81,14 @@ async def test_message_handler(mocker):
     main.nc.request.reset_mock()
 
     # Case 2
-    main.len = lambda: 0
+    main.len = lambda _: 0
     await main.message_handler(message, None)
     main.nc.request.assert_not_called()
 
     main.nc.request.reset_mock()
 
     # Case 3
-    main.len = lambda: 5
+    main.len = lambda _: 5
     future = asyncio.get_event_loop().create_future()
 
     main.nc.request.side_effect = Exception('forced')
