@@ -52,4 +52,3 @@ class GradleDistribution(Distribution, object):
 
 
 setup(distclass=GradleDistribution, include_package_data=True)
-
